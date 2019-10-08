@@ -6,6 +6,8 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import static org.springdoc.demo.app2.MultipleOpenApiResource.DEFAULT_GROUP_NAME;
+
 @Configuration
 public class MultipleOpenApiSupportConfiguration {
     @Bean
@@ -15,5 +17,10 @@ public class MultipleOpenApiSupportConfiguration {
                 ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
             }
         };
+    }
+
+    @Bean
+    public GroupedOpenApi defaultGroupedOpenApi() {
+        return GroupedOpenApi.builder().setGroup(DEFAULT_GROUP_NAME).build();
     }
 }
