@@ -2,7 +2,6 @@ package org.springdoc.demo.app2;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springdoc.api.OpenApiCustomiser;
 import org.springdoc.api.OpenApiResource;
 import org.springdoc.core.AbstractRequestBuilder;
 import org.springdoc.core.AbstractResponseBuilder;
@@ -10,6 +9,7 @@ import org.springdoc.core.GeneralInfoBuilder;
 import org.springdoc.core.OpenAPIBuilder;
 import org.springdoc.core.OperationBuilder;
 import org.springdoc.core.RequestBodyBuilder;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,30 +40,27 @@ public class MultipleOpenApiResource {
     private final Map<String, OpenApiResource> groupedOpenApiResources;
 
     @Autowired
-    public MultipleOpenApiResource(Optional<List<GroupedOpenApi>> groupedOpenApis,
-                                   RequestMappingInfoHandlerMapping requestMappingHandlerMapping, OpenAPIBuilder defaultOpenAPIBuilder,
+    public MultipleOpenApiResource(List<GroupedOpenApi> groupedOpenApis,
+                                   ObjectFactory<OpenAPIBuilder> defaultOpenAPIBuilder,
+                                   RequestMappingInfoHandlerMapping requestMappingHandlerMapping,
                                    AbstractRequestBuilder defaultAbstractRequestBuilder, AbstractResponseBuilder defaultAbstractResponseBuilder,
                                    OperationBuilder defaultOperationBuilder, GeneralInfoBuilder defaultGeneralInfoBuilder,
-                                   RequestBodyBuilder defaultRequestBodyBuilder,
-                                   Optional<List<OpenApiCustomiser>> defaultOpenApiCustomisers) {
+                                   RequestBodyBuilder defaultRequestBodyBuilder
+    ) {
 
-        this.groupedOpenApiResources = groupedOpenApis.map(items -> items.stream()
+        this.groupedOpenApiResources = groupedOpenApis.stream()
                 .collect(Collectors.toMap(GroupedOpenApi::getGroup, item ->
                         new OpenApiResource(
-                                nullOr(item.getOpenAPIBuilder(), defaultOpenAPIBuilder),
-                                nullOr(item.getRequestBuilder(), defaultAbstractRequestBuilder),
-                                nullOr(item.getResponseBuilder(), defaultAbstractResponseBuilder),
-                                nullOr(item.getOperationBuilder(), defaultOperationBuilder),
-                                nullOr(item.getInfoBuilder(), defaultGeneralInfoBuilder),
-                                nullOr(item.getRequestBodyBuilder(), defaultRequestBodyBuilder),
+                                defaultOpenAPIBuilder.getObject(),
+                                defaultAbstractRequestBuilder,
+                                defaultAbstractResponseBuilder,
+                                defaultOperationBuilder,
+                                defaultGeneralInfoBuilder,
+                                defaultRequestBodyBuilder,
                                 requestMappingHandlerMapping,
-                                Optional.ofNullable(nullOr(item.getOpenApiCustomisers(), defaultOpenApiCustomisers.orElse(null)))
-                        )))
-        ).orElse(Collections.emptyMap());
-    }
-
-    private static <T> T nullOr(T item, T defaultItem) {
-        return item == null ? defaultItem : item;
+                                Optional.of(item.getOpenApiCustomisers())
+                        )
+                ));
     }
 
     @Operation(hidden = true)
